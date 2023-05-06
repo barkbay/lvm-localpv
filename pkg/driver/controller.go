@@ -156,6 +156,10 @@ func getRoundedCapacity(size int64) int64 {
 // re provisioned on some other node.
 func waitForLVMVolume(ctx context.Context,
 	vol *lvmapi.LVMVolume) (*lvmapi.LVMVolume, bool, error) {
+
+	span, ctx := apm.StartSpan(ctx, "waitForLVMVolume", "lvm")
+	defer span.End()
+
 	var reschedule bool // tracks if rescheduling is required or not.
 	var err error
 	if vol.Status.State == lvm.LVMStatusPending {
@@ -264,11 +268,15 @@ func (cs *controller) init() error {
 // CreateLVMVolume create new lvm volume for csi volume request
 func CreateLVMVolume(ctx context.Context, req *csi.CreateVolumeRequest,
 	params *VolumeParams) (*lvmapi.LVMVolume, error) {
+
+	span, ctx := apm.StartSpan(ctx, "CreateLVMVolume", "lvm")
+	defer span.End()
+
 	volName := strings.ToLower(req.GetName())
 	capacity := strconv.FormatInt(getRoundedCapacity(
 		req.GetCapacityRange().RequiredBytes), 10)
 
-	vol, err := lvm.GetLVMVolume(volName)
+	vol, err := lvm.GetLVMVolume(ctx, volName)
 	if err != nil {
 		if !k8serror.IsNotFound(err) {
 			return nil, status.Errorf(codes.Aborted,
@@ -416,7 +424,7 @@ func (cs *controller) DeleteVolume(
 
 func (cs *controller) deleteVolume(ctx context.Context, volumeID string) error {
 	klog.Infof("received request to delete volume %q", volumeID)
-	vol, err := lvm.GetLVMVolume(volumeID)
+	vol, err := lvm.GetLVMVolume(ctx, volumeID)
 	if err != nil {
 		if k8serror.IsNotFound(err) {
 			return nil
@@ -482,7 +490,7 @@ func (cs *controller) ValidateVolumeCapabilities(
 		return nil, status.Error(codes.InvalidArgument, "Volume capabilities not provided")
 	}
 
-	if _, err := lvm.GetLVMVolume(volumeID); err != nil {
+	if _, err := lvm.GetLVMVolume(ctx, volumeID); err != nil {
 		return nil, status.Errorf(codes.NotFound, "Get volume failed err %s", err.Error())
 	}
 
@@ -559,7 +567,7 @@ func (cs *controller) ControllerExpandVolume(
 	/* round off the new size */
 	updatedSize := getRoundedCapacity(req.GetCapacityRange().GetRequiredBytes())
 
-	vol, err := lvm.GetLVMVolume(volumeID)
+	vol, err := lvm.GetLVMVolume(ctx, volumeID)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -634,7 +642,7 @@ func (cs *controller) CreateSnapshot(
 			Build(), nil
 	}
 
-	vol, err := lvm.GetLVMVolume(req.SourceVolumeId)
+	vol, err := lvm.GetLVMVolume(ctx, req.SourceVolumeId)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,

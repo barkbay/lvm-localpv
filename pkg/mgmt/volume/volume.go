@@ -17,7 +17,9 @@ limitations under the License.
 package volume
 
 import (
+	"context"
 	"fmt"
+	"go.elastic.co/apm/v2"
 	"regexp"
 	"sort"
 	"strconv"
@@ -42,7 +44,11 @@ func (c *VolController) isDeletionCandidate(Vol *apis.LVMVolume) bool {
 
 // syncHandler compares the actual state with the desired, and attempts to
 // converge the two.
-func (c *VolController) syncHandler(key string) error {
+func (c *VolController) syncHandler(ctx context.Context, key string) error {
+	tx := apm.DefaultTracer().StartTransaction("SyncHandler", "volume-controller")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -66,7 +72,7 @@ func (c *VolController) syncHandler(key string) error {
 		klog.Infof("err %s, While converting unstructured obj to typed object\n", err.Error())
 	}
 	VolCopy := vol.DeepCopy()
-	err = c.syncVol(VolCopy)
+	err = c.syncVol(ctx, VolCopy)
 	return err
 }
 
@@ -146,7 +152,7 @@ func (c *VolController) enqueueVol(obj interface{}) {
 	c.workqueue.Add(key)
 }
 
-//Obj from queue is not readily in lvmvol type. This function would convert obj into lvmvolume type.
+// Obj from queue is not readily in lvmvol type. This function would convert obj into lvmvolume type.
 func (c *VolController) getStructuredObject(obj interface{}) (*apis.LVMVolume, bool) {
 	unstructuredInterface, ok := obj.(*unstructured.Unstructured)
 	if !ok {
@@ -164,13 +170,13 @@ func (c *VolController) getStructuredObject(obj interface{}) (*apis.LVMVolume, b
 
 // synVol is the function which tries to converge to a desired state for the
 // LVMVolume
-func (c *VolController) syncVol(vol *apis.LVMVolume) error {
+func (c *VolController) syncVol(ctx context.Context, vol *apis.LVMVolume) error {
 	var err error
 	// LVM Volume should be deleted. Check if deletion timestamp is set
 	if c.isDeletionCandidate(vol) {
 		err = lvm.DestroyVolume(vol)
 		if err == nil {
-			err = lvm.RemoveVolFinalizer(vol)
+			err = lvm.RemoveVolFinalizer(ctx, vol)
 		}
 		return err
 	}
@@ -191,7 +197,7 @@ func (c *VolController) syncVol(vol *apis.LVMVolume) error {
 	if vol.Spec.VolGroup != "" {
 		err = lvm.CreateVolume(vol)
 		if err == nil {
-			return lvm.UpdateVolInfo(vol, lvm.LVMStatusReady)
+			return lvm.UpdateVolInfo(ctx, vol, lvm.LVMStatusReady)
 		}
 	}
 
@@ -208,12 +214,12 @@ func (c *VolController) syncVol(vol *apis.LVMVolume) error {
 		for _, vg := range vgs {
 			// first update volGroup field in lvm volume resource for ensuring
 			// idempotency and avoiding volume leaks during crash.
-			if vol, err = lvm.UpdateVolGroup(vol, vg.Name); err != nil {
+			if vol, err = lvm.UpdateVolGroup(ctx, vol, vg.Name); err != nil {
 				klog.Errorf("failed to update volGroup to %v: %v", vg.Name, err)
 				return err
 			}
 			if err = lvm.CreateVolume(vol); err == nil {
-				return lvm.UpdateVolInfo(vol, lvm.LVMStatusReady)
+				return lvm.UpdateVolInfo(ctx, vol, lvm.LVMStatusReady)
 			}
 		}
 	}
@@ -221,7 +227,7 @@ func (c *VolController) syncVol(vol *apis.LVMVolume) error {
 	// In case no vg available or lvm.CreateVolume fails for all vgs, mark
 	// the volume provisioning failed so that controller can reschedule it.
 	vol.Status.Error = c.transformLVMError(err)
-	return lvm.UpdateVolInfo(vol, lvm.LVMStatusFailed)
+	return lvm.UpdateVolInfo(ctx, vol, lvm.LVMStatusFailed)
 }
 
 // getVgPriorityList returns ordered list of volume groups from higher to lower
@@ -355,7 +361,8 @@ func (c *VolController) processNextWorkItem() bool {
 		}
 		// Run the syncHandler, passing it the namespace/name string of the
 		// Vol resource to be synced.
-		if err := c.syncHandler(key); err != nil {
+
+		if err := c.syncHandler(context.Background(), key); err != nil {
 			// Put the item back on the workqueue to handle any transient errors.
 			c.workqueue.AddRateLimited(key)
 			return fmt.Errorf("error syncing '%s': %s, requeuing", key, err.Error())

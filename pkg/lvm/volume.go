@@ -16,6 +16,7 @@ package lvm
 
 import (
 	"context"
+	"go.elastic.co/apm/v2"
 	"os"
 	"strconv"
 	"time"
@@ -107,7 +108,11 @@ func DeleteVolume(volumeID string) (err error) {
 }
 
 // GetLVMVolume fetches the given LVMVolume
-func GetLVMVolume(volumeID string) (*apis.LVMVolume, error) {
+func GetLVMVolume(ctx context.Context, volumeID string) (*apis.LVMVolume, error) {
+
+	span, _ := apm.StartSpan(ctx, "GetLVMVolume", "lvm")
+	defer span.End()
+
 	getOptions := metav1.GetOptions{}
 	vol, err := volbuilder.NewKubeclient().
 		WithNamespace(LvmNamespace).Get(volumeID, getOptions)
@@ -117,6 +122,10 @@ func GetLVMVolume(volumeID string) (*apis.LVMVolume, error) {
 // WaitForLVMVolumeProcessed waits till the lvm volume becomes
 // ready or failed (i.e reaches to terminal state).
 func WaitForLVMVolumeProcessed(ctx context.Context, volumeID string) (*apis.LVMVolume, error) {
+
+	span, _ := apm.StartSpan(ctx, "WaitForLVMVolumeProcessed", "lvm")
+	defer span.End()
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	for {
@@ -125,7 +134,7 @@ func WaitForLVMVolumeProcessed(ctx context.Context, volumeID string) (*apis.LVMV
 			return nil, status.FromContextError(ctx.Err()).Err()
 		case <-timer.C:
 		}
-		vol, err := GetLVMVolume(volumeID)
+		vol, err := GetLVMVolume(ctx, volumeID)
 		if err != nil {
 			return nil, status.Errorf(codes.Aborted,
 				"lvm: wait failed, not able to get the volume %s %s", volumeID, err.Error())
@@ -140,6 +149,10 @@ func WaitForLVMVolumeProcessed(ctx context.Context, volumeID string) (*apis.LVMV
 
 // WaitForLVMVolumeDestroy waits till the lvm volume gets deleted.
 func WaitForLVMVolumeDestroy(ctx context.Context, volumeID string) error {
+
+	span, _ := apm.StartSpan(ctx, "WaitForLVMVolumeDestroy", "lvm")
+	defer span.End()
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	for {
@@ -148,7 +161,7 @@ func WaitForLVMVolumeDestroy(ctx context.Context, volumeID string) error {
 			return status.FromContextError(ctx.Err()).Err()
 		case <-timer.C:
 		}
-		_, err := GetLVMVolume(volumeID)
+		_, err := GetLVMVolume(ctx, volumeID)
 		if err != nil {
 			if k8serror.IsNotFound(err) {
 				return nil
@@ -163,7 +176,11 @@ func WaitForLVMVolumeDestroy(ctx context.Context, volumeID string) error {
 // GetLVMVolumeState returns LVMVolume OwnerNode and State for
 // the given volume. CreateVolume request may call it again and
 // again until volume is "Ready".
-func GetLVMVolumeState(volID string) (string, string, error) {
+func GetLVMVolumeState(ctx context.Context, volID string) (string, string, error) {
+
+	span, _ := apm.StartSpan(ctx, "GetLVMVolumeState", "lvm")
+	defer span.End()
+
 	getOptions := metav1.GetOptions{}
 	vol, err := volbuilder.NewKubeclient().
 		WithNamespace(LvmNamespace).Get(volID, getOptions)
@@ -176,7 +193,11 @@ func GetLVMVolumeState(volID string) (string, string, error) {
 }
 
 // UpdateVolInfo updates LVMVolume CR with node id and finalizer
-func UpdateVolInfo(vol *apis.LVMVolume, state string) error {
+func UpdateVolInfo(ctx context.Context, vol *apis.LVMVolume, state string) error {
+
+	span, _ := apm.StartSpan(ctx, "UpdateVolInfo", "lvm")
+	defer span.End()
+
 	if vol.Finalizers != nil {
 		return nil
 	}
@@ -201,7 +222,11 @@ func UpdateVolInfo(vol *apis.LVMVolume, state string) error {
 }
 
 // UpdateVolGroup updates LVMVolume CR with volGroup name.
-func UpdateVolGroup(vol *apis.LVMVolume, vgName string) (*apis.LVMVolume, error) {
+func UpdateVolGroup(ctx context.Context, vol *apis.LVMVolume, vgName string) (*apis.LVMVolume, error) {
+
+	span, _ := apm.StartSpan(ctx, "UpdateVolInfo", "lvm")
+	defer span.End()
+
 	newVol, err := volbuilder.BuildFrom(vol).
 		WithVolGroup(vgName).Build()
 	if err != nil {
@@ -211,7 +236,11 @@ func UpdateVolGroup(vol *apis.LVMVolume, vgName string) (*apis.LVMVolume, error)
 }
 
 // RemoveVolFinalizer adds finalizer to LVMVolume CR
-func RemoveVolFinalizer(vol *apis.LVMVolume) error {
+func RemoveVolFinalizer(ctx context.Context, vol *apis.LVMVolume) error {
+
+	span, _ := apm.StartSpan(ctx, "RemoveVolFinalizer", "lvm")
+	defer span.End()
+
 	vol.Finalizers = nil
 
 	_, err := volbuilder.NewKubeclient().WithNamespace(LvmNamespace).Update(vol)
