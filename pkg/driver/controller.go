@@ -351,7 +351,7 @@ func (cs *controller) CreateVolume(
 	defer tx.End()
 	ctx = apm.ContextWithTransaction(ctx, tx)
 
-	if err := cs.validateVolumeCreateReq(req); err != nil {
+	if err := cs.validateVolumeCreateReq(ctx, req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -376,7 +376,7 @@ func (cs *controller) CreateVolume(
 		var finishCreateVolume func()
 		if finishCreateVolume, err = cs.leakProtection.BeginCreateVolume(volName,
 			params.PVCNamespace, params.PVCName); err != nil {
-			return nil, err
+			return nil, apm.CaptureError(ctx, err)
 		}
 		defer finishCreateVolume()
 
@@ -384,7 +384,7 @@ func (cs *controller) CreateVolume(
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, apm.CaptureError(ctx, err)
 	}
 	sendEventOrIgnore(ctx, params.PVCName, volName,
 		strconv.FormatInt(int64(size), 10),
@@ -1031,7 +1031,11 @@ func (cs *controller) validateRequest(
 	)
 }
 
-func (cs *controller) validateVolumeCreateReq(req *csi.CreateVolumeRequest) error {
+func (cs *controller) validateVolumeCreateReq(ctx context.Context, req *csi.CreateVolumeRequest) error {
+
+	span, _ := apm.StartSpan(ctx, "validateVolumeCreateReq", "lvm")
+	defer span.End()
+
 	err := cs.validateRequest(
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 	)
