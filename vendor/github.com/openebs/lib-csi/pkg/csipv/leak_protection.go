@@ -250,7 +250,7 @@ func (c *LeakProtectionController) addFinalizer(ctx context.Context, pvc *corev1
 	claimClone := pvc.DeepCopy()
 	claimClone.ObjectMeta.Annotations[c.GetAnnotationKey()] = volumeName
 	claimClone.ObjectMeta.Finalizers = append(claimClone.ObjectMeta.Finalizers, finalizer)
-	_, err := c.client.CoreV1().PersistentVolumeClaims(claimClone.Namespace).Update(context.TODO(), claimClone, metav1.UpdateOptions{})
+	_, err := c.client.CoreV1().PersistentVolumeClaims(claimClone.Namespace).Update(ctx, claimClone, metav1.UpdateOptions{})
 	if err != nil {
 		klog.ErrorS(err, "failed to add finalizer to pvc", "pvc", klog.KObj(pvc))
 		return err
@@ -280,7 +280,7 @@ func (c *LeakProtectionController) removeFinalizer(ctx context.Context, pvc *cor
 	}
 	claimClone.ObjectMeta.Finalizers = newFinalizerList
 
-	_, err := c.client.CoreV1().PersistentVolumeClaims(claimClone.Namespace).Update(context.TODO(), claimClone, metav1.UpdateOptions{})
+	_, err := c.client.CoreV1().PersistentVolumeClaims(claimClone.Namespace).Update(ctx, claimClone, metav1.UpdateOptions{})
 	if err != nil {
 		klog.ErrorS(err, "failed to remove finalizer from PVC",
 			"finalizer", finalizer,
@@ -349,7 +349,7 @@ func (c *LeakProtectionController) BeginCreateVolume(
 func (c *LeakProtectionController) getPVC(ctx context.Context, pvcNamespace string, pvcName string) (*corev1.PersistentVolumeClaim, error) {
 	span, ctx := apm.StartSpan(ctx, "PersistentVolumeClaims.Get", "controller")
 	defer span.End()
-	pvc, err := c.client.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
+	pvc, err := c.client.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(ctx, pvcName, metav1.GetOptions{})
 	return pvc, err
 }
 

@@ -52,7 +52,7 @@ replace k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.20.2
 
 replace k8s.io/sample-controller => k8s.io/sample-controller v0.20.2
 
-replace github.com/openebs/lib-csi => github.com/barkbay/lib-csi v0.0.0-20230506175000-5e0d1b1fcb44
+replace github.com/openebs/lib-csi => github.com/barkbay/lib-csi v0.0.0-20230506192738-ae7f80af57d4
 
 require (
 	github.com/container-storage-interface/spec v1.2.0

@@ -359,6 +359,7 @@ func (cs *controller) CreateVolume(
 	tx := apm.DefaultTracer().StartTransaction("CreateVolume", "csi-request")
 	defer tx.End()
 	ctx = apm.ContextWithTransaction(ctx, tx)
+	tx.Context.SetLabel("VolumeName", req.GetName())
 
 	if err := cs.validateVolumeCreateReq(ctx, req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
