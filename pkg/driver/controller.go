@@ -18,6 +18,8 @@ package driver
 
 import (
 	"fmt"
+
+	"github.com/openebs/lvm-localpv/pkg/tracing"
 	"github.com/openebs/lvm-localpv/pkg/version"
 	"os"
 	"strconv"
@@ -203,6 +205,13 @@ func (cs *controller) init() error {
 	cfg, err := k8sapi.Config().Get()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build kubeconfig")
+	}
+
+	tracer := apm.DefaultTracer()
+	if tracer != nil {
+		cfg.Wrap(tracing.ClientGoTransportWrapper(
+			tracing.WithDefaultTransaction(tracing.ClientGoCacheTx(tracer)),
+		))
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(cfg)

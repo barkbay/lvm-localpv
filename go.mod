@@ -68,6 +68,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
+	go.elastic.co/apm/module/apmhttp/v2 v2.4.1
 	go.elastic.co/apm/v2 v2.4.1
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158
