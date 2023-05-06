@@ -79,6 +79,9 @@ type Config struct {
 
 	// Exclude metrics about the exporter itself (process_*, go_*).
 	DisableExporterMetrics bool
+
+	KubeAPIQPS   int
+	KubeAPIBurst int
 }
 
 // Default returns a new instance of config

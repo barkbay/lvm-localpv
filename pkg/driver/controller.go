@@ -18,9 +18,9 @@ package driver
 
 import (
 	"fmt"
-
 	"github.com/openebs/lvm-localpv/pkg/tracing"
 	"github.com/openebs/lvm-localpv/pkg/version"
+	"k8s.io/client-go/util/flowcontrol"
 	"os"
 	"strconv"
 	"strings"
@@ -205,6 +205,14 @@ func (cs *controller) init() error {
 	cfg, err := k8sapi.Config().Get()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build kubeconfig")
+	}
+
+	if cs.driver.config.KubeAPIQPS > 0 {
+		if cs.driver.config.KubeAPIBurst == 0 {
+			cs.driver.config.KubeAPIBurst = cs.driver.config.KubeAPIQPS
+		}
+		klog.Infof("setting qps to %d / burst to %d", cs.driver.config.KubeAPIQPS, cs.driver.config.KubeAPIBurst)
+		cfg.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(float32(cs.driver.config.KubeAPIQPS), cs.driver.config.KubeAPIQPS)
 	}
 
 	tracer := apm.DefaultTracer()

@@ -97,6 +97,14 @@ func main() {
 		&config.DisableExporterMetrics, "disable-exporter-metrics", true, "Exclude metrics about the exporter itself (process_*, go_*).",
 	)
 
+	cmd.PersistentFlags().IntVar(
+		&config.KubeAPIQPS, "kube-api-qps", 0, "QPS to K8S API.",
+	)
+
+	cmd.PersistentFlags().IntVar(
+		&config.KubeAPIBurst, "kube-api-burst", 0, "QPS burst to K8S API.",
+	)
+
 	config.RIopsLimitPerGB = cmd.PersistentFlags().StringSlice(
 		"riops-per-gb", []string{},
 		"Read IOPS per GB limit to use for each volume group prefix, "+
