@@ -151,7 +151,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openebs/lib-csi v0.6.0 => github.com/barkbay/lib-csi v0.0.0-20230506162026-26dfb07c6aa8
+# github.com/openebs/lib-csi v0.6.0 => github.com/barkbay/lib-csi v0.0.0-20230506175000-5e0d1b1fcb44
 ## explicit
 github.com/openebs/lib-csi/pkg/btrfs
 github.com/openebs/lib-csi/pkg/client/k8s
@@ -764,4 +764,4 @@ sigs.k8s.io/yaml
 # k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.2
 # k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.20.2
 # k8s.io/sample-controller => k8s.io/sample-controller v0.20.2
-# github.com/openebs/lib-csi => github.com/barkbay/lib-csi v0.0.0-20230506162026-26dfb07c6aa8
+# github.com/openebs/lib-csi => github.com/barkbay/lib-csi v0.0.0-20230506175000-5e0d1b1fcb44

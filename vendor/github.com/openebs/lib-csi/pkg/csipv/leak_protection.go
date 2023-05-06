@@ -207,10 +207,10 @@ func (c *LeakProtectionController) processPVC(ctx context.Context, pvcNamespace,
 		}
 
 		if err := func() error {
-			if alreadyExists := c.claimsInProgress.Add(c.claimsInProgressKey(pvc)); alreadyExists {
+			if alreadyExists := c.claimsInProgress.Add(ctx, c.claimsInProgressKey(pvc)); alreadyExists {
 				return fmt.Errorf("csi driver already has volume creation in progress, will retry after sometime")
 			}
-			defer c.claimsInProgress.Remove(c.claimsInProgressKey(pvc))
+			defer c.claimsInProgress.Remove(ctx, c.claimsInProgressKey(pvc))
 			return c.onPVCDelete(pvc, volumeName)
 		}(); err != nil {
 			return fmt.Errorf("failed to finalize pvc deletion: %v", err)
@@ -318,8 +318,7 @@ func (c *LeakProtectionController) BeginCreateVolume(
 	span, ctx := apm.StartSpan(ctx, "BeginCreateVolume", "controller")
 	defer span.End()
 
-	pvc, err := c.client.CoreV1().PersistentVolumeClaims(pvcNamespace).
-		Get(context.TODO(), pvcName, metav1.GetOptions{})
+	pvc, err := c.getPVC(ctx, pvcNamespace, pvcName)
 	if err != nil {
 		klog.ErrorS(err, "failed to fetch pvc", "pvc", klog.KRef(pvcNamespace, pvcName))
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to fetch pvc: %v", err)
@@ -332,9 +331,9 @@ func (c *LeakProtectionController) BeginCreateVolume(
 
 	key := c.claimsInProgressKey(pvc)
 	finishCreateVolume := func() {
-		c.claimsInProgress.Remove(key)
+		c.claimsInProgress.Remove(ctx, key)
 	}
-	alreadyExists := c.claimsInProgress.Add(key)
+	alreadyExists := c.claimsInProgress.Add(ctx, key)
 	if alreadyExists {
 		return nil, status.Errorf(codes.Aborted,
 			"csi driver already has volume creation in progress")
@@ -345,6 +344,13 @@ func (c *LeakProtectionController) BeginCreateVolume(
 		return nil, err
 	}
 	return finishCreateVolume, nil
+}
+
+func (c *LeakProtectionController) getPVC(ctx context.Context, pvcNamespace string, pvcName string) (*corev1.PersistentVolumeClaim, error) {
+	span, ctx := apm.StartSpan(ctx, "PersistentVolumeClaims.Get", "controller")
+	defer span.End()
+	pvc, err := c.client.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
+	return pvc, err
 }
 
 func (c *LeakProtectionController) GetFinalizer() string {
@@ -367,7 +373,10 @@ func newSyncSet() *syncSet {
 	}
 }
 
-func (s *syncSet) Add(k string) bool {
+func (s *syncSet) Add(ctx context.Context, k string) bool {
+	span, ctx := apm.StartSpan(ctx, "syncset.Add", "controller")
+	defer span.End()
+
 	s.Lock()
 	_, ok := s.m[k]
 	s.m[k] = struct{}{}
@@ -375,7 +384,9 @@ func (s *syncSet) Add(k string) bool {
 	return ok
 }
 
-func (s *syncSet) Remove(k string) {
+func (s *syncSet) Remove(ctx context.Context, k string) {
+	span, ctx := apm.StartSpan(ctx, "syncset.Remove", "controller")
+	defer span.End()
 	s.Lock()
 	delete(s.m, k)
 	s.Unlock()
