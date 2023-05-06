@@ -4,6 +4,8 @@ cloud.google.com/go/compute/metadata
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
+# github.com/armon/go-radix v1.0.0
+github.com/armon/go-radix
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
@@ -19,6 +21,20 @@ github.com/docker/go-units
 # github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
 github.com/docker/spdystream
 github.com/docker/spdystream/spdy
+# github.com/elastic/go-licenser v0.4.0
+github.com/elastic/go-licenser
+github.com/elastic/go-licenser/licensing
+# github.com/elastic/go-sysinfo v1.7.1
+github.com/elastic/go-sysinfo
+github.com/elastic/go-sysinfo/internal/registry
+github.com/elastic/go-sysinfo/providers/aix
+github.com/elastic/go-sysinfo/providers/darwin
+github.com/elastic/go-sysinfo/providers/linux
+github.com/elastic/go-sysinfo/providers/shared
+github.com/elastic/go-sysinfo/providers/windows
+github.com/elastic/go-sysinfo/types
+# github.com/elastic/go-windows v1.0.1
+github.com/elastic/go-windows
 # github.com/emicklei/go-restful v2.9.5+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
@@ -79,6 +95,10 @@ github.com/hpcloud/tail/winfile
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/jcchavezs/porto v0.1.0
+github.com/jcchavezs/porto
+# github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901
+github.com/joeshaw/multierror
 # github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 ## explicit
 github.com/jpillora/go-ogle-analytics
@@ -160,7 +180,7 @@ github.com/prometheus/client_model/go
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.6.0
+# github.com/prometheus/procfs v0.7.3
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
@@ -172,12 +192,33 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.6.1
 ## explicit
 github.com/stretchr/testify/assert
+# go.elastic.co/apm/v2 v2.4.1
+## explicit
+go.elastic.co/apm/v2
+go.elastic.co/apm/v2/apmconfig
+go.elastic.co/apm/v2/internal/apmcloudutil
+go.elastic.co/apm/v2/internal/apmhostutil
+go.elastic.co/apm/v2/internal/apmhttputil
+go.elastic.co/apm/v2/internal/apmlog
+go.elastic.co/apm/v2/internal/apmstrings
+go.elastic.co/apm/v2/internal/apmversion
+go.elastic.co/apm/v2/internal/configutil
+go.elastic.co/apm/v2/internal/iochan
+go.elastic.co/apm/v2/internal/ringbuffer
+go.elastic.co/apm/v2/internal/wildcard
+go.elastic.co/apm/v2/model
+go.elastic.co/apm/v2/stacktrace
+go.elastic.co/apm/v2/transport
+# go.elastic.co/fastjson v1.1.0
+go.elastic.co/fastjson
 # golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/mod v0.3.0
+# golang.org/x/mod v0.5.1
+golang.org/x/mod/internal/lazyregexp
+golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+# golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -196,12 +237,14 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
+# golang.org/x/sys v0.0.0-20220209214540-3681064d5158
 ## explicit
+golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.4
+golang.org/x/sys/windows/registry
+# golang.org/x/text v0.3.7
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -225,7 +268,8 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200616133436-c1934b75d054
+# golang.org/x/tools v0.1.9
+golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/imports
 golang.org/x/tools/internal/event
@@ -236,6 +280,7 @@ golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
+golang.org/x/tools/internal/typeparams
 # golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
@@ -340,6 +385,8 @@ gopkg.in/tomb.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
+# howett.net/plist v1.0.0
+howett.net/plist
 # k8s.io/api v0.20.2 => k8s.io/api v0.20.2
 ## explicit
 k8s.io/api/admissionregistration/v1

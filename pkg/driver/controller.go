@@ -18,6 +18,8 @@ package driver
 
 import (
 	"fmt"
+	"github.com/openebs/lvm-localpv/pkg/version"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -26,21 +28,13 @@ import (
 	"github.com/openebs/lib-csi/pkg/csipv"
 	clientset "github.com/openebs/lvm-localpv/pkg/generated/clientset/internalclientset"
 	informers "github.com/openebs/lvm-localpv/pkg/generated/informer/externalversions"
+	"go.elastic.co/apm/v2"
 	corev1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	k8serror "k8s.io/apimachinery/pkg/api/errors"
-	apimeta "k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
-
 	errors "github.com/openebs/lib-csi/pkg/common/errors"
 	schd "github.com/openebs/lib-csi/pkg/scheduler"
 	lvmapi "github.com/openebs/lvm-localpv/pkg/apis/openebs.io/lvm/v1alpha1"
@@ -49,6 +43,14 @@ import (
 	"github.com/openebs/lvm-localpv/pkg/lvm"
 	csipayload "github.com/openebs/lvm-localpv/pkg/response"
 	analytics "github.com/openebs/lvm-localpv/pkg/usage"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
 )
 
 // size constants
@@ -71,14 +73,32 @@ type controller struct {
 	lvmNodeInformer cache.SharedIndexInformer
 
 	leakProtection *csipv.LeakProtectionController
+
+	tracer *apm.Tracer
 }
 
 // NewController returns a new instance
 // of CSI controller
 func NewController(d *CSIDriver) csi.ControllerServer {
+	var tracer *apm.Tracer
+
+	apmUrl := os.Getenv("ELASTIC_APM_SERVER_URL")
+	klog.Infof("Creating APM tracer for URL %s", apmUrl)
+	if len(apmUrl) > 0 {
+		// set up APM  tracing if configured
+		newTracer, err := apm.NewTracer("lvm-driver-controller", fmt.Sprintf("%s-%s", version.Current(), version.GetGitCommit()))
+		if err != nil {
+			// don't fail the application because tracing fails
+			klog.Fatalf("failed to created tracer: %v", err)
+		}
+		apm.SetDefaultTracer(newTracer)
+		tracer = newTracer
+	}
+
 	ctrl := &controller{
 		driver:       d,
 		capabilities: newControllerCapabilities(),
+		tracer:       tracer,
 	}
 
 	if err := ctrl.init(); err != nil {
