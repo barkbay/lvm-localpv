@@ -117,7 +117,9 @@ var SupportedVolumeCapabilityAccessModes = []*csi.VolumeCapability_AccessMode{
 }
 
 // sendEventOrIgnore sends anonymous local-pv provision/delete events
-func sendEventOrIgnore(pvcName, pvName, capacity, stgType, method string) {
+func sendEventOrIgnore(ctx context.Context, pvcName, pvName, capacity, stgType, method string) {
+	span, _ := apm.StartSpan(ctx, "sendEventOrIgnore", "lvm")
+	defer span.End()
 	if lvm.GoogleAnalyticsEnabled == "true" {
 		analytics.New().Build().ApplicationBuilder().
 			SetVolumeType(stgType, method).
@@ -337,6 +339,9 @@ func (cs *controller) CreateVolume(
 	ctx context.Context,
 	req *csi.CreateVolumeRequest,
 ) (*csi.CreateVolumeResponse, error) {
+	tx := apm.DefaultTracer().StartTransaction("CreateVolume", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 
 	if err := cs.validateVolumeCreateReq(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -373,7 +378,7 @@ func (cs *controller) CreateVolume(
 	if err != nil {
 		return nil, err
 	}
-	sendEventOrIgnore(params.PVCName, volName,
+	sendEventOrIgnore(ctx, params.PVCName, volName,
 		strconv.FormatInt(int64(size), 10),
 		"lvm-localpv", analytics.VolumeProvision)
 
@@ -393,6 +398,10 @@ func (cs *controller) CreateVolume(
 func (cs *controller) DeleteVolume(
 	ctx context.Context,
 	req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+
+	tx := apm.DefaultTracer().StartTransaction("DeleteVolume", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 
 	var err error
 	if err = cs.validateDeleteVolumeReq(req); err != nil {
@@ -427,7 +436,7 @@ func (cs *controller) deleteVolume(ctx context.Context, volumeID string) error {
 	if err = lvm.WaitForLVMVolumeDestroy(ctx, volumeID); err != nil {
 		return err
 	}
-	sendEventOrIgnore("", volumeID, vol.Spec.Capacity, "lvm-localpv", analytics.VolumeDeprovision)
+	sendEventOrIgnore(ctx, "", volumeID, vol.Spec.Capacity, "lvm-localpv", analytics.VolumeDeprovision)
 	return nil
 }
 
@@ -459,6 +468,11 @@ func (cs *controller) ValidateVolumeCapabilities(
 	ctx context.Context,
 	req *csi.ValidateVolumeCapabilitiesRequest,
 ) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+
+	tx := apm.DefaultTracer().StartTransaction("ValidateVolumeCapabilities", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	volumeID := strings.ToLower(req.GetVolumeId())
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
@@ -489,6 +503,10 @@ func (cs *controller) ControllerGetCapabilities(
 	req *csi.ControllerGetCapabilitiesRequest,
 ) (*csi.ControllerGetCapabilitiesResponse, error) {
 
+	tx := apm.DefaultTracer().StartTransaction("ControllerGetCapabilities", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	resp := &csi.ControllerGetCapabilitiesResponse{
 		Capabilities: cs.capabilities,
 	}
@@ -503,6 +521,10 @@ func (cs *controller) ControllerExpandVolume(
 	ctx context.Context,
 	req *csi.ControllerExpandVolumeRequest,
 ) (*csi.ControllerExpandVolumeResponse, error) {
+
+	tx := apm.DefaultTracer().StartTransaction("ControllerExpandVolume", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 
 	volumeID := strings.ToLower(req.GetVolumeId())
 	if volumeID == "" {
@@ -588,6 +610,10 @@ func (cs *controller) CreateSnapshot(
 	ctx context.Context,
 	req *csi.CreateSnapshotRequest,
 ) (*csi.CreateSnapshotResponse, error) {
+
+	tx := apm.DefaultTracer().StartTransaction("CreateSnapshot", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 
 	klog.Infof("CreateSnapshot volume %s for %s", req.Name, req.SourceVolumeId)
 
@@ -704,6 +730,10 @@ func (cs *controller) DeleteSnapshot(
 	req *csi.DeleteSnapshotRequest,
 ) (*csi.DeleteSnapshotResponse, error) {
 
+	tx := apm.DefaultTracer().StartTransaction("DeleteSnapshot", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	klog.Infof("DeleteSnapshot request for %s", req.SnapshotId)
 
 	// snapshodID is formed as <volname>@<snapname>
@@ -740,6 +770,10 @@ func (cs *controller) ListSnapshots(
 	req *csi.ListSnapshotsRequest,
 ) (*csi.ListSnapshotsResponse, error) {
 
+	tx := apm.DefaultTracer().StartTransaction("ListSnapshots", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
@@ -764,6 +798,10 @@ func (cs *controller) ControllerPublishVolume(
 	req *csi.ControllerPublishVolumeRequest,
 ) (*csi.ControllerPublishVolumeResponse, error) {
 
+	tx := apm.DefaultTracer().StartTransaction("ControllerPublishVolume", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
+
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
@@ -775,6 +813,10 @@ func (cs *controller) GetCapacity(
 	ctx context.Context,
 	req *csi.GetCapacityRequest,
 ) (*csi.GetCapacityResponse, error) {
+
+	tx := apm.DefaultTracer().StartTransaction("GetCapacity", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 
 	var segments map[string]string
 	if topology := req.GetAccessibleTopology(); topology != nil {
@@ -872,7 +914,9 @@ func (cs *controller) ListVolumes(
 	ctx context.Context,
 	req *csi.ListVolumesRequest,
 ) (*csi.ListVolumesResponse, error) {
-
+	tx := apm.DefaultTracer().StartTransaction("ListVolumes", "csi-request")
+	defer tx.End()
+	ctx = apm.ContextWithTransaction(ctx, tx)
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
