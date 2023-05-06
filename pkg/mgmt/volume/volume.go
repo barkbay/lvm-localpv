@@ -171,10 +171,13 @@ func (c *VolController) getStructuredObject(obj interface{}) (*apis.LVMVolume, b
 // synVol is the function which tries to converge to a desired state for the
 // LVMVolume
 func (c *VolController) syncVol(ctx context.Context, vol *apis.LVMVolume) error {
+	span, ctx := apm.StartSpan(ctx, "syncVol", "lvm")
+	defer span.End()
+
 	var err error
 	// LVM Volume should be deleted. Check if deletion timestamp is set
 	if c.isDeletionCandidate(vol) {
-		err = lvm.DestroyVolume(vol)
+		err = lvm.DestroyVolume(ctx, vol)
 		if err == nil {
 			err = lvm.RemoveVolFinalizer(ctx, vol)
 		}

@@ -250,7 +250,7 @@ func (cs *controller) init() error {
 		go analytics.PingCheck()
 	}
 
-	if cs.leakProtection, err = csipv.NewLeakProtectionController(kubeClient,
+	if cs.leakProtection, err = csipv.NewLeakProtectionController(context.Background(), kubeClient,
 		pvcInformer, cs.driver.config.DriverName,
 		func(pvc *corev1.PersistentVolumeClaim, volumeName string) error {
 			// use default timeout of 10s for deletion.
@@ -374,9 +374,10 @@ func (cs *controller) CreateVolume(
 		// mark volume for leak protection if pvc gets deleted
 		// before the creation of pv.
 		var finishCreateVolume func()
-		if finishCreateVolume, err = cs.leakProtection.BeginCreateVolume(volName,
-			params.PVCNamespace, params.PVCName); err != nil {
-			return nil, apm.CaptureError(ctx, err)
+		if finishCreateVolume, err = cs.leakProtection.BeginCreateVolume(ctx, volName, params.PVCNamespace, params.PVCName); err != nil {
+			err := apm.CaptureError(ctx, err)
+			err.Send()
+			return nil, err
 		}
 		defer finishCreateVolume()
 
@@ -384,7 +385,9 @@ func (cs *controller) CreateVolume(
 	}
 
 	if err != nil {
-		return nil, apm.CaptureError(ctx, err)
+		err := apm.CaptureError(ctx, err)
+		err.Send()
+		return nil, err
 	}
 	sendEventOrIgnore(ctx, params.PVCName, volName,
 		strconv.FormatInt(int64(size), 10),

@@ -52,6 +52,8 @@ replace k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.20.2
 
 replace k8s.io/sample-controller => k8s.io/sample-controller v0.20.2
 
+replace github.com/openebs/lib-csi => github.com/barkbay/lib-csi v0.0.0-20230506162026-26dfb07c6aa8
+
 require (
 	github.com/container-storage-interface/spec v1.2.0
 	github.com/docker/go-units v0.3.3
